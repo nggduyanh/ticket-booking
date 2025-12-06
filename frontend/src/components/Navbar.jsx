@@ -32,7 +32,7 @@ const NavBar = () => {
             setIsMenuOpen(false);
           }}
         >
-          Home
+          Trang chủ
         </Link>
         <Link
           to="/movies"
@@ -41,7 +41,7 @@ const NavBar = () => {
             setIsMenuOpen(false);
           }}
         >
-          Movies
+          Phim
         </Link>
         <Link
           to="/bookings"
@@ -50,7 +50,7 @@ const NavBar = () => {
             setIsMenuOpen(false);
           }}
         >
-          Bookings
+          Vé đã đặt
         </Link>
       </div>
       <div className="flex items-center gap-8">
@@ -60,7 +60,7 @@ const NavBar = () => {
             onClick={openSignIn}
             className="px-4 py-1 sm:px-7 sm:py-2 bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer"
           >
-            Login
+            Đăng nhập
           </button>
         ) : (
           <UserButton />

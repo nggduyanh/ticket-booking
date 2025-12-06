@@ -3,11 +3,12 @@ import mongoose from "mongoose";
 const showSchema = new mongoose.Schema(
   {
     movie: { type: String, required: true, ref: "Movie" },
+    room: { type: String, required: true, ref: "Room" },
     showDateTime: { type: Date, required: true },
     showPrice: { type: Number, required: true },
     occupiedSeats: { type: Object, default: {} },
   },
-  { minimize: false }
+  { minimize: false, timestamps: true }
 );
 
 const Show = mongoose.model("Show", showSchema);

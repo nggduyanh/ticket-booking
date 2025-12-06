@@ -16,16 +16,39 @@ const AdminSideBar = () => {
   };
 
   const adminNavlinks = [
-    { name: "Dashboard", path: "/admin", icon: LayoutDashboardIcon },
+    { name: "Bảng điều khiển", path: "/admin", icon: LayoutDashboardIcon },
     {
-      name: "Create Movies",
+      name: "Tạo phim",
       path: "/admin/create-movies",
       icon: PlusSquareIcon,
     },
-    { name: "Create Shows", path: "/admin/create-shows", icon: PlusSquareIcon },
-    { name: "List Shows", path: "/admin/list-shows", icon: ListIcon },
+    { name: "Danh sách phim", path: "/admin/movies", icon: ListIcon },
     {
-      name: "List Bookings",
+      name: "Tạo thể loại",
+      path: "/admin/genres/create",
+      icon: PlusSquareIcon,
+    },
+    { name: "Danh sách thể loại", path: "/admin/genres", icon: ListIcon },
+    {
+      name: "Tạo loại ghế",
+      path: "/admin/seat-types/create",
+      icon: PlusSquareIcon,
+    },
+    { name: "Danh sách loại ghế", path: "/admin/seat-types", icon: ListIcon },
+    {
+      name: "Tạo phòng chiếu",
+      path: "/admin/rooms/create",
+      icon: PlusSquareIcon,
+    },
+    { name: "Danh sách phòng chiếu", path: "/admin/rooms", icon: ListIcon },
+    {
+      name: "Tạo suất chiếu",
+      path: "/admin/create-shows",
+      icon: PlusSquareIcon,
+    },
+    { name: "Danh sách suất chiếu", path: "/admin/list-shows", icon: ListIcon },
+    {
+      name: "Danh sách đặt vé",
       path: "/admin/list-bookings",
       icon: ListCollapseIcon,
     },

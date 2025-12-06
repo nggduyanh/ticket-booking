@@ -8,9 +8,9 @@ const Footer = () => {
         <div className="md:max-w-96">
           <img alt="" className="h-11" src={assets.logo} />
           <p className="mt-6 text-sm">
-            Lorem Ipsum has been the industry's standard dummy text ever since
-            the 1500s, when an unknown printer took a galley of type and
-            scrambled it to make a type specimen book.
+            Hệ thống đặt vé xem phim trực tuyến hàng đầu Việt Nam. Đặt vé nhanh
+            chóng, dễ dàng và tiện lợi với trải nghiệm tuyệt vời nhất dành cho
+            người yêu điện ảnh.
           </p>
           <div className="flex items-center gap-2 mt-4">
             <img
@@ -23,34 +23,34 @@ const Footer = () => {
         </div>
         <div className="flex-1 flex items-start md:justify-end gap-20 md:gap-40">
           <div>
-            <h2 className="font-semibold mb-5">Company</h2>
+            <h2 className="font-semibold mb-5">Công ty</h2>
             <ul className="text-sm space-y-2">
               <li>
-                <a href="#">Home</a>
+                <a href="#">Trang chủ</a>
               </li>
               <li>
-                <a href="#">About us</a>
+                <a href="#">Về chúng tôi</a>
               </li>
               <li>
-                <a href="#">Contact us</a>
+                <a href="#">Liên hệ</a>
               </li>
               <li>
-                <a href="#">Privacy policy</a>
+                <a href="#">Chính sách bảo mật</a>
               </li>
             </ul>
           </div>
           <div>
-            <h2 className="font-semibold mb-5">Get in touch</h2>
+            <h2 className="font-semibold mb-5">Liên hệ với chúng tôi</h2>
             <div className="text-sm space-y-2">
-              <p>+1-234-567-890</p>
+              <p>+84-123-456-789</p>
               <p>contact@example.com</p>
             </div>
           </div>
         </div>
       </div>
       <p className="pt-4 text-center text-sm pb-5">
-        Copyright {new Date().getFullYear()} ©{" "}
-        <a href="https://www.utc.edu.vn">UTC</a>. All Right Reserved.
+        Bản quyền {new Date().getFullYear()} ©{" "}
+        <a href="https://www.utc.edu.vn">UTC</a>. Đã đăng ký bản quyền.
       </p>
     </footer>
   );

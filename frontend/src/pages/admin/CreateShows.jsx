@@ -3,21 +3,58 @@ import { dummyShowsData } from "../../assets/assets";
 import Loading from "../../components/Loading";
 import Title from "../../components/admin/Title";
 import { CheckIcon, DeleteIcon, StarIcon } from "lucide-react";
+import { useAppContext } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 const CreateShows = () => {
-  const currency = import.meta.env.VITE_CURRENCY_SYMBOL || "$";
+  const { axios, getToken, user } = useAppContext();
+  const currency = import.meta.env.VITE_CURRENTCY || "đ";
   const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [selectedRoom, setSelectedRoom] = useState(null);
   const [dateTimeSelection, setDateTimeSelection] = useState({});
   const [dateTimeInput, setDateTimeInput] = useState("");
   const [showPrice, setShowPrice] = useState("");
+  const [creatingShow, setCreatingShow] = useState(false);
 
   const fetchNowPlayingMovies = async () => {
-    setNowPlayingMovies(dummyShowsData);
+    try {
+      const { data } = await axios.get("/movies/list", {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+
+      if (data.success) {
+        setNowPlayingMovies(data.movies);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchRooms = async () => {
+    try {
+      const { data } = await axios.get("/rooms/list", {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+
+      if (data.success) {
+        setRooms(data.rooms);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   useEffect(() => {
     fetchNowPlayingMovies();
+    fetchRooms();
   }, []);
 
   const handleDateTimeAdd = () => {
@@ -48,59 +85,138 @@ const CreateShows = () => {
     });
   };
 
+  const handleSubmit = async () => {
+    try {
+      setCreatingShow(true);
+      if (
+        !selectedMovie ||
+        !selectedRoom ||
+        !showPrice ||
+        Object.keys(dateTimeSelection).length === 0
+      ) {
+        setCreatingShow(false);
+        return toast("Thiếu trường thông tin");
+      }
+
+      const showInputs = Object.entries(dateTimeSelection).map(
+        ([date, time]) => ({
+          date,
+          time,
+        })
+      );
+      const payload = {
+        movieId: selectedMovie,
+        roomId: selectedRoom,
+        showInputs,
+        showPrice: Number(showPrice),
+      };
+      const { data } = await axios.post("/shows/create", payload, {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+      if (data.success) {
+        toast.success(data.message);
+        setSelectedMovie(null);
+        setDateTimeSelection({});
+        setShowPrice("");
+        setDateTimeInput("");
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      setCreatingShow(false);
+      console.log("Tạo giờ chiếu thất bại", error);
+      toast.error("Tạo giờ chiếu thất bại");
+    }
+    setCreatingShow(false);
+  };
+
   return nowPlayingMovies.length > 0 ? (
     <>
       <Title text1="Add" text2="Shows" />
-      <p className="mt-10 text-lg font-medium">Now Playing Movies</p>
+      <p className="mt-10 text-lg font-medium">Phim đang chiếu</p>
       <div className="overflow-x-auto pb-4">
         <div className="group flex flex-wrap gap-4 mt-4 w-max">
           {nowPlayingMovies.map((movie) => (
             <div
-              key={movie.id}
+              key={movie._id}
               className={`relative max-w-40 cursor-pointer 
           group-hover:not-hover:opacity-40 hover:-translate-y-1 
           transition duration-300`}
-              onClick={() => setSelectedMovie(movie.id)}
+              onClick={() => setSelectedMovie(movie._id)}
             >
               <div className="relative rounded-lg overflow-hidden">
                 <img
-                  // src={movie.poster_path}
-                  alt=""
+                  src={movie.image}
+                  alt={movie.title}
                   className="w-full object-cover brightness-90"
                 />
-                <div className="text-sm flex items-center justify-between p-2 bg-black/70 w-full absolute bottom-0 left-0">
+                {/* <div className="text-sm flex items-center justify-between p-2 bg-black/70 w-full absolute bottom-0 left-0">
                   <p className="flex items-center gap-1 text-gray-400">
                     <StarIcon className="w-4 h-4 text-primary fill-primary" />
                     {movie.vote_average.toFixed(1)}
                   </p>
 
                   <p className="text-gray-300">{movie.vote_count} Votes</p>
-                </div>
+                </div> */}
               </div>
-              {selectedMovie === movie.id && (
+              {selectedMovie === movie._id && (
                 <div className="absolute top-2 right-2 flex items-center justify-center bg-primary h-6 w-6 rounded">
                   <CheckIcon className="w-4 h-4 text-white" strokeWidth={2.5} />
                 </div>
               )}
               <p className="font-medium truncate">{movie.title}</p>
-              <p className="text-gray-400 text-sm">{movie.release_date}</p>
+              {/* <p className="text-gray-400 text-sm">{movie.release_date}</p> */}
             </div>
           ))}
         </div>
       </div>
 
       <div className="mt-8">
-        <label className="block text-sm font-medium mb-2">Show Price</label>
+        <label className="block text-sm font-medium mb-2">
+          Chọn phòng chiếu <span className="text-red-500">*</span>
+        </label>
+        <select
+          value={selectedRoom || ""}
+          onChange={(e) => setSelectedRoom(e.target.value)}
+          className="w-full max-w-md px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="">-- Chọn phòng chiếu --</option>
+          {rooms.map((room) => (
+            <option key={room._id} value={room._id}>
+              {room.name} ({room.totalSeats} ghế)
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-8">
+        <label className="block text-sm font-medium mb-2">Giá vé</label>
 
         <div className="inline-flex items-center gap-2 border border-gray-600 px-3 py-2 rounded-md">
           <p className="text-gray-400 text-sm">{currency}</p>
 
           <input
             min={0}
+            step={1}
             type="number"
             value={showPrice}
-            onChange={(e) => setShowPrice(e.target.value)}
-            placeholder="Enter show price"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Chỉ cho phép số nguyên dương (không có dấu chấm)
+              if (value === "" || /^\d+$/.test(value)) {
+                setShowPrice(value);
+              }
+            }}
+            onKeyDown={(e) => {
+              // Chặn các phím . , e E + -
+              if ([".", ",", "e", "E", "+", "-"].includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
+            placeholder="Nhập giá vé (số nguyên)"
             className="outline-none"
           />
         </div>
@@ -108,7 +224,7 @@ const CreateShows = () => {
 
       <div className="mt-6">
         <label className="block text-sm font-medium mb-2">
-          Select Date and Time
+          Chọn ngày và giờ
         </label>
 
         <div className="inline-flex gap-5 border border-gray-600 p-1 pl-3 rounded-lg">
@@ -123,14 +239,14 @@ const CreateShows = () => {
             onClick={handleDateTimeAdd}
             className="bg-primary/80 text-white px-3 py-2 text-sm rounded-lg hover:bg-primary cursor-pointer"
           >
-            Add Time
+            Thêm giờ
           </button>
         </div>
       </div>
 
       {Object.keys(dateTimeSelection).length > 0 && (
         <div className="mt-6">
-          <h2 className="mb-2">Selected Date-Time</h2>
+          <h2 className="mb-2">Ngày-Giờ đã chọn</h2>
           <ul className="space-y-3">
             {Object.entries(dateTimeSelection).map(([date, times]) => (
               <li key={date}>
@@ -156,10 +272,12 @@ const CreateShows = () => {
         </div>
       )}
       <button
+        onClick={handleSubmit}
+        disabled={creatingShow}
         className="bg-primary text-white px-8 py-2 mt-6 rounded hover:bg-primary/90 
       transition-all cursor-pointer"
       >
-        Create Show
+        Tạo suất chiếu
       </button>
     </>
   ) : (

@@ -4,20 +4,43 @@ import Loading from "../components/Loading";
 import BlurCircle from "../components/BlurCircle";
 import timeFormat from "../common/timeFormat";
 import { dateFormat } from "../common/dateFormat";
+import formatCurrency from "../common/formatCurrency";
+import { useAppContext } from "../context/AppContext";
+import { toast } from "react-hot-toast";
 
 const Bookings = () => {
+  const { user, axios, getToken } = useAppContext();
+
   const currentcy = import.meta.env.VITE_CURRENTCY;
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchBookings = async () => {
-    setBookings(dummyBookingData);
+    try {
+      const { data } = await axios.get("/users/bookings", {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+      if (data.success) {
+        setBookings(data.bookings);
+      } else {
+        toast.error("Lỗi khi lấy dữ liệu bookings", data.message);
+        console.log("Lỗi khi lấy dữ liệu bookings", data.message);
+      }
+    } catch (error) {
+      toast.error("Lỗi khi lấy dữ liệu bookings", error);
+      console.log("Lỗi khi lấy dữ liệu bookings", error);
+    }
     setIsLoading(false);
   };
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (user) {
+      fetchBookings();
+    }
+  }, [user]);
 
   return isLoading ? (
     <Loading />
@@ -28,7 +51,7 @@ const Bookings = () => {
         <BlurCircle bottom="0px" left="600px" />
       </div>
 
-      <h1 className="text-lg font-semibold mb-4">My Bookings</h1>
+      <h1 className="text-lg font-semibold mb-4">Vé của tôi</h1>
 
       {bookings.map((item, index) => (
         <div
@@ -37,8 +60,8 @@ const Bookings = () => {
         >
           <div className="flex flex-col md:flex-row">
             <img
-              // src={item.show.movie.poster_path}
-              alt=""
+              src={item.show.movie.image}
+              alt={item.show.movie.title}
               className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
             />
             <div className="flex flex-col p-4">
@@ -53,24 +76,36 @@ const Bookings = () => {
           </div>
 
           <div className="flex flex-col md:items-end md:text-right justify-between p-4">
-            <div className="flex items-center gap-4">
-              <p className="text-2xl font-semibold mb-3">
-                {currentcy}
-                {item.amount}
-              </p>
-              {!item.isPaid && (
-                <button className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer">
-                  Pay Now
-                </button>
+            <div className="flex flex-col items-start md:items-end gap-2">
+              {item.paidStatus === 3 && (
+                <a href={item.paymentLink} target="_blank">
+                  <button className="bg-primary px-4 py-1.5 text-sm rounded-full font-medium cursor-pointer">
+                    Thanh toán
+                  </button>
+                </a>
               )}
+              {item.paidStatus === 1 && (
+                <div className="bg-green-700 px-4 py-1.5 text-sm rounded-full font-medium cursor-default whitespace-nowrap">
+                  Đã thanh toán
+                </div>
+              )}
+              {item.paidStatus === 2 && (
+                <div className="bg-red-700 px-4 py-1.5 text-sm rounded-full font-medium cursor-default whitespace-nowrap">
+                  Thanh toán thất bại
+                </div>
+              )}
+              <p className="text-lg font-semibold">
+                {formatCurrency(item.amount)}
+                {currentcy}
+              </p>
             </div>
             <div className="text-sm">
               <p>
-                <span className="text-gray-400">Total Tickets:</span>{" "}
+                <span className="text-gray-400">Tổng số vé:</span>{" "}
                 {item.bookedSeats.length}
               </p>
               <p>
-                <span className="text-gray-400">Seat Number:</span>{" "}
+                <span className="text-gray-400">Số ghế:</span>{" "}
                 {item.bookedSeats.join(", ")}
               </p>
             </div>

@@ -23,7 +23,7 @@ const Background = () => {
       hover:bg-primary-dull transition rounded-full font-medium cursor-pointer"
         onClick={() => navigate("/movies")}
       >
-        Explore Movies
+        Khám phá phim
         <ArrowRight className="w-5 h-5" />
       </button>
     </div>
