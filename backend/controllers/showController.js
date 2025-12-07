@@ -67,7 +67,10 @@ export const listShows = async (req, res) => {
 
     const shows = await Show.find({
       showDateTime: { $gte: new Date() },
-    }).populate("movie");
+    }).populate({
+      path: "movie",
+      populate: { path: "genreId", model: "Genre" },
+    });
 
     // Lấy unique movies từ shows
     const uniqueMoviesMap = new Map();
@@ -115,7 +118,7 @@ export const detailShow = async (req, res) => {
 
     const shows = await Show.find(filter).populate("room");
     const movieObjectId = new Types.ObjectId(movieId);
-    const movie = await Movie.findById(movieObjectId);
+    const movie = await Movie.findById(movieObjectId).populate("genreId");
     if (!movie) {
       return res
         .status(404)

@@ -97,25 +97,25 @@ const MovieDetail = () => {
 
         <div className="relative flex flex-col gap-3">
           <BlurCircle top="-100px" left="-100px" />
-          <p className="text-primary">ENGLISH</p>
 
           <h1 className="text-4xl font-semibold max-w-96 text-balance">
             {show.movie.title}
           </h1>
 
-          {/* <div className="flex items-center gap-2 text-gray-300">
-            <StarIcon className="w-5 h-5 text-primary fill-primary" />
-            {show.movie.vote_average.toFixed(1)} User Rating
-          </div> */}
+          {show.movie.genreId && (
+            <p className="text-primary font-medium mt-2">
+              {show.movie.genreId.name}
+            </p>
+          )}
 
-          <p className="text-gray-400 mt-2 text-sm leading-tight max-w-xl">
-            {show.movie.overview}
-          </p>
+          {show.movie.description && (
+            <p className="text-gray-300 mt-3 text-sm leading-relaxed max-w-xl">
+              {show.movie.description}
+            </p>
+          )}
 
-          <p className="text-gray-400 mt-2 text-sm">
-            {timeFormat(show.movie.runtime)} •{" "}
-            {/* {show.movie.genres.map((genre) => genre.name).join(", ")} •{" "}
-            {show.movie.release_date.split("-")[0]} */}
+          <p className="text-gray-400 mt-3 text-sm">
+            {show.movie.runtime && timeFormat(show.movie.runtime)}
           </p>
 
           <div className="flex items-center flex-wrap gap-4 mt-4">
@@ -172,9 +172,12 @@ const MovieDetail = () => {
 
       <p className="text-lg font-medium mt-20 mb-8">Có thể bạn cũng thích</p>
       <div className="flex flex-wrap max-sm:justify-center gap-8">
-        {shows.slice(0, 4).map((movie, index) => (
-          <MovieCard key={index} movie={movie} />
-        ))}
+        {shows
+          .filter((movie) => movie._id !== show.movie._id)
+          .slice(0, 4)
+          .map((movie, index) => (
+            <MovieCard key={index} movie={movie} />
+          ))}
       </div>
       <div className="flex justify-center mt-20">
         <button

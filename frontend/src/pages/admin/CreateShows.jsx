@@ -138,11 +138,11 @@ const CreateShows = () => {
       <Title text1="Add" text2="Shows" />
       <p className="mt-10 text-lg font-medium">Phim đang chiếu</p>
       <div className="overflow-x-auto pb-4">
-        <div className="group flex flex-wrap gap-4 mt-4 w-max">
+        <div className="group flex flex-wrap gap-4 mt-4">
           {nowPlayingMovies.map((movie) => (
             <div
               key={movie._id}
-              className={`relative max-w-40 cursor-pointer 
+              className={`relative w-40 cursor-pointer 
           group-hover:not-hover:opacity-40 hover:-translate-y-1 
           transition duration-300`}
               onClick={() => setSelectedMovie(movie._id)}
@@ -151,7 +151,7 @@ const CreateShows = () => {
                 <img
                   src={movie.image}
                   alt={movie.title}
-                  className="w-full object-cover brightness-90"
+                  className="w-40 h-60 object-cover brightness-90"
                 />
                 {/* <div className="text-sm flex items-center justify-between p-2 bg-black/70 w-full absolute bottom-0 left-0">
                   <p className="flex items-center gap-1 text-gray-400">
@@ -167,7 +167,7 @@ const CreateShows = () => {
                   <CheckIcon className="w-4 h-4 text-white" strokeWidth={2.5} />
                 </div>
               )}
-              <p className="font-medium truncate">{movie.title}</p>
+              <p className="font-medium truncate mt-2">{movie.title}</p>
               {/* <p className="text-gray-400 text-sm">{movie.release_date}</p> */}
             </div>
           ))}

@@ -17,18 +17,19 @@ const MovieCard = ({ movie }) => {
         }}
         src={movie.image}
         alt={movie.title}
-        className="rounded-lg h-52 w-full object-cover object-right-bottom cursor-pointer"
+        className="rounded-lg w-full h-80 object-cover cursor-pointer"
       />
 
       <p className="font-semibold mt-2 truncate">{movie.title}</p>
 
       <p className="text-sm text-gray-400 mt-2">
-        {/* {new Date(movie.release_date).getFullYear()} •{" "} */}
-        {/* {movie?.genres
-          ?.slice(0, 2)
-          .map((genre) => genre.name)
-          .join(" | ")}{" "}
-        • {timeFormat(movie.runtime)} */}
+        {movie?.genreId?.name && <span>{movie.genreId.name}</span>}
+        {movie?.runtime && (
+          <span>
+            {movie.genreId?.name ? " • " : ""}
+            {timeFormat(movie.runtime)}
+          </span>
+        )}
       </p>
 
       <div className="flex items-center justify-between mt-4 pb-3">

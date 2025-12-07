@@ -108,6 +108,16 @@ const Bookings = () => {
                 <span className="text-gray-400">Số ghế:</span>{" "}
                 {item.bookedSeats.join(", ")}
               </p>
+              <p>
+                <span className="text-gray-400">Thời gian đặt:</span>{" "}
+                {new Date(item.createdAt).toLocaleString("vi-VN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
             </div>
           </div>
         </div>

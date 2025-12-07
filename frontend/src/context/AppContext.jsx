@@ -8,8 +8,6 @@ export const AppContext = createContext();
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 
 export const AppProvider = ({ children }) => {
-  console.log("---------");
-
   const [isAdmin, setIsAdmin] = useState(false);
   const [shows, setShows] = useState([]);
 
@@ -20,7 +18,6 @@ export const AppProvider = ({ children }) => {
 
   const fetchIsAdmin = async () => {
     const api = import.meta.env.VITE_API_BASE_URL;
-    console.log("-------import.meta.env.VITE_API_BASE_URL;", api);
 
     try {
       const { data } = await axios.get("/admin/is-admin", {
