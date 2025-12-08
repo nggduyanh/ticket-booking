@@ -211,10 +211,27 @@ const CreateShows = () => {
               }
             }}
             onKeyDown={(e) => {
-              // Chặn các phím . , e E + -
-              if ([".", ",", "e", "E", "+", "-"].includes(e.key)) {
+              // Chặn các phím . , e E + - và phím lên/xuống
+              if (
+                [".", ",", "e", "E", "+", "-", "ArrowUp", "ArrowDown"].includes(
+                  e.key
+                )
+              ) {
                 e.preventDefault();
               }
+            }}
+            onWheel={(e) => {
+              // Ngăn thay đổi giá trị khi scroll chuột
+              e.target.blur();
+              e.preventDefault();
+            }}
+            onFocus={(e) => {
+              // Ngăn thay đổi giá trị khi scroll chuột
+              e.target.addEventListener(
+                "wheel",
+                (event) => event.preventDefault(),
+                { passive: false }
+              );
             }}
             placeholder="Nhập giá vé (số nguyên)"
             className="outline-none"
