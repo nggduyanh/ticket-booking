@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Edit, Trash2, Eye, Plus, Search } from "lucide-react";
 import Loading from "../../components/Loading";
+import Pagination from "../../components/Pagination";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 
@@ -11,12 +12,17 @@ const ListGenres = () => {
   const [filteredGenres, setFilteredGenres] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState(null);
   const navigate = useNavigate();
   const { getToken } = useAppContext();
 
   const fetchGenres = async () => {
+    setIsLoading(true);
     try {
       const { data } = await axios.get("/genres/list", {
+        params: { page: currentPage, limit },
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -25,6 +31,7 @@ const ListGenres = () => {
       if (data.success) {
         setGenres(data.genres);
         setFilteredGenres(data.genres);
+        setPagination(data.pagination);
       } else {
         toast.error(data.message);
       }
@@ -38,7 +45,7 @@ const ListGenres = () => {
 
   useEffect(() => {
     fetchGenres();
-  }, []);
+  }, [currentPage, limit]);
 
   useEffect(() => {
     const filtered = genres.filter((genre) =>
@@ -108,44 +115,58 @@ const ListGenres = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {filteredGenres.map((genre) => (
-            <div
-              key={genre._id}
-              className="flex gap-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition"
-            >
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2">{genre.name}</h3>
-                <p className="text-sm text-gray-400 line-clamp-2">
-                  {genre.description || "Chưa có mô tả"}
-                </p>
+        <>
+          <div className="grid gap-4">
+            {filteredGenres.map((genre) => (
+              <div
+                key={genre._id}
+                className="flex gap-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition"
+              >
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2">{genre.name}</h3>
+                  <p className="text-sm text-gray-400 line-clamp-2">
+                    {genre.description || "Chưa có mô tả"}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => navigate(`/admin/genres/${genre._id}`)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 transition rounded text-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Chi tiết
+                  </button>
+                  <button
+                    onClick={() => navigate(`/admin/genres/${genre._id}/edit`)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition rounded text-sm"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Sửa
+                  </button>
+                  <button
+                    onClick={() => handleDelete(genre._id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 transition rounded text-sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Xóa
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => navigate(`/admin/genres/${genre._id}`)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 transition rounded text-sm"
-                >
-                  <Eye className="w-4 h-4" />
-                  Chi tiết
-                </button>
-                <button
-                  onClick={() => navigate(`/admin/genres/${genre._id}/edit`)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition rounded text-sm"
-                >
-                  <Edit className="w-4 h-4" />
-                  Sửa
-                </button>
-                <button
-                  onClick={() => handleDelete(genre._id)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 transition rounded text-sm"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Xóa
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {pagination && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={setCurrentPage}
+              limit={limit}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setCurrentPage(1);
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );

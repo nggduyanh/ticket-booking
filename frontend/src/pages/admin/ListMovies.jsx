@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Edit, Trash2, Eye, Plus, Search } from "lucide-react";
 import Loading from "../../components/Loading";
+import Pagination from "../../components/Pagination";
 import timeFormat from "../../common/timeFormat";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -13,23 +14,24 @@ const ListMovies = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState(null);
   const navigate = useNavigate();
   const { getToken } = useAppContext();
 
   useEffect(() => {
     fetchGenres();
-    fetchMovies();
   }, []);
 
   useEffect(() => {
-    if (!isLoading) {
-      fetchMovies();
-    }
-  }, [searchTerm, selectedGenre]);
+    fetchMovies();
+  }, [currentPage, limit, searchTerm, selectedGenre]);
 
   const fetchGenres = async () => {
     try {
       const { data } = await axios.get("/genres/list", {
+        params: { all: true },
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -44,8 +46,9 @@ const ListMovies = () => {
   };
 
   const fetchMovies = async () => {
+    setIsLoading(true);
     try {
-      const params = {};
+      const params = { page: currentPage, limit };
       if (searchTerm) params.search = searchTerm;
       if (selectedGenre) params.genreId = selectedGenre;
 
@@ -58,6 +61,7 @@ const ListMovies = () => {
       });
       if (data.success) {
         setMovies(data.movies);
+        setPagination(data.pagination);
       } else {
         toast.error(data.message);
       }
@@ -154,61 +158,77 @@ const ListMovies = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {movies.map((movie) => (
-            <div
-              key={movie._id}
-              className="flex gap-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition"
-            >
-              {movie.image && (
-                <img
-                  src={movie.image}
-                  alt={movie.title}
-                  className="w-24 h-36 object-cover rounded"
-                />
-              )}
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2">{movie.title}</h3>
-                {movie.genreId && (
-                  <p className="text-sm text-primary mb-1">
-                    Thể loại: {movie.genreId.name}
-                  </p>
+        <>
+          <div className="grid gap-4">
+            {movies.map((movie) => (
+              <div
+                key={movie._id}
+                className="flex gap-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition"
+              >
+                {movie.image && (
+                  <img
+                    src={movie.image}
+                    alt={movie.title}
+                    className="w-24 h-36 object-cover rounded"
+                  />
                 )}
-                <p className="text-sm text-gray-400 line-clamp-2 mb-2">
-                  {movie.description}
-                </p>
-                {movie.runtime && (
-                  <p className="text-sm text-gray-500">
-                    Thời lượng: {timeFormat(movie.runtime)}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2">{movie.title}</h3>
+                  {movie.genreId && (
+                    <p className="text-sm text-primary mb-1">
+                      Thể loại: {movie.genreId.name}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-400 line-clamp-2 mb-2">
+                    {movie.description}
                   </p>
-                )}
+                  {movie.runtime && (
+                    <p className="text-sm text-gray-500">
+                      Thời lượng: {timeFormat(movie.runtime)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => navigate(`/admin/movies/${movie._id}`)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 transition rounded text-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Chi tiết
+                  </button>
+                  <button
+                    onClick={() => navigate(`/admin/movies/${movie._id}/edit`)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition rounded text-sm"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Sửa
+                  </button>
+                  <button
+                    onClick={() => handleDelete(movie._id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 transition rounded text-sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Xóa
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => navigate(`/admin/movies/${movie._id}`)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 transition rounded text-sm"
-                >
-                  <Eye className="w-4 h-4" />
-                  Chi tiết
-                </button>
-                <button
-                  onClick={() => navigate(`/admin/movies/${movie._id}/edit`)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition rounded text-sm"
-                >
-                  <Edit className="w-4 h-4" />
-                  Sửa
-                </button>
-                <button
-                  onClick={() => handleDelete(movie._id)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 transition rounded text-sm"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Xóa
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {pagination && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+              }}
+              limit={limit}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setCurrentPage(1);
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );

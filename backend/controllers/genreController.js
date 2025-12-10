@@ -45,11 +45,35 @@ const createGenre = async (req, res) => {
 // Lấy danh sách tất cả thể loại
 const listGenres = async (req, res) => {
   try {
-    const genres = await Genre.find().sort({ name: 1 });
+    const { page = 1, limit = 10, all } = req.query;
+
+    // Nếu có cờ 'all', trả về tất cả không phân trang
+    if (all === "true") {
+      const genres = await Genre.find().sort({ name: 1 });
+      return res.status(200).json({
+        success: true,
+        genres,
+      });
+    }
+
+    // Phân trang bình thường
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const genres = await Genre.find()
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Genre.countDocuments();
 
     res.status(200).json({
       success: true,
       genres,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error("Lỗi khi lấy danh sách thể loại:", error);

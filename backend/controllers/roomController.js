@@ -50,11 +50,35 @@ const createRoom = async (req, res) => {
 // Lấy danh sách phòng chiếu
 const listRooms = async (req, res) => {
   try {
-    const rooms = await Room.find().sort({ name: 1 });
+    const { page = 1, limit = 10, all } = req.query;
+
+    // Nếu có cờ 'all', trả về tất cả không phân trang
+    if (all === "true") {
+      const rooms = await Room.find().sort({ name: 1 });
+      return res.status(200).json({
+        success: true,
+        rooms,
+      });
+    }
+
+    // Phân trang bình thường
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const rooms = await Room.find()
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Room.countDocuments();
 
     res.status(200).json({
       success: true,
       rooms,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error("Lỗi khi lấy danh sách phòng chiếu:", error);

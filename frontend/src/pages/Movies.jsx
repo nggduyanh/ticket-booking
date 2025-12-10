@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Search } from "lucide-react";
 import MovieCard from "../components/MovieCard";
+import Pagination from "../components/Pagination";
 import { useAppContext } from "../context/AppContext";
 
 const Movies = () => {
@@ -11,19 +12,22 @@ const Movies = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [pagination, setPagination] = useState(null);
 
   useEffect(() => {
     fetchGenres();
-    fetchMovies();
   }, []);
 
   useEffect(() => {
     fetchMovies();
-  }, [searchTerm, selectedGenre]);
+  }, [searchTerm, selectedGenre, currentPage, limit]);
 
   const fetchGenres = async () => {
     try {
       const { data } = await axios.get("/genres/list", {
+        params: { all: true },
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -38,8 +42,9 @@ const Movies = () => {
   };
 
   const fetchMovies = async () => {
+    setIsLoading(true);
     try {
-      const params = {};
+      const params = { page: currentPage, limit };
       if (searchTerm) params.search = searchTerm;
       if (selectedGenre) params.genreId = selectedGenre;
 
@@ -52,6 +57,7 @@ const Movies = () => {
       });
       if (data.success) {
         setMovies(data.shows);
+        setPagination(data.pagination);
       }
     } catch (error) {
       console.log("Lỗi khi lấy danh sách phim", error);
@@ -95,11 +101,28 @@ const Movies = () => {
           <p className="text-gray-400">Đang tải...</p>
         </div>
       ) : movies.length > 0 ? (
-        <div className="flex flex-wrap max-sm:justify-center gap-8">
-          {movies?.map((movie) => (
-            <MovieCard key={movie._id} movie={movie} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-wrap max-sm:justify-center gap-8">
+            {movies?.map((movie) => (
+              <MovieCard key={movie._id} movie={movie} />
+            ))}
+          </div>
+          {pagination && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              limit={limit}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setCurrentPage(1);
+              }}
+            />
+          )}
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center h-64">
           <h1 className="text-2xl font-bold text-center">

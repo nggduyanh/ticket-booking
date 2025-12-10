@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Edit, Trash2, Eye, Plus, Search } from "lucide-react";
 import Loading from "../../components/Loading";
+import Pagination from "../../components/Pagination";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 
@@ -11,12 +12,15 @@ const ListSeatTypes = () => {
   const [filteredSeatTypes, setFilteredSeatTypes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState(null);
   const navigate = useNavigate();
   const { getToken } = useAppContext();
 
   useEffect(() => {
     fetchSeatTypes();
-  }, []);
+  }, [currentPage, limit]);
 
   useEffect(() => {
     const filtered = seatTypes.filter((st) =>
@@ -26,8 +30,10 @@ const ListSeatTypes = () => {
   }, [searchTerm, seatTypes]);
 
   const fetchSeatTypes = async () => {
+    setIsLoading(true);
     try {
       const { data } = await axios.get("/seat-types/list", {
+        params: { page: currentPage, limit },
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -36,6 +42,7 @@ const ListSeatTypes = () => {
       if (data.success) {
         setSeatTypes(data.seatTypes);
         setFilteredSeatTypes(data.seatTypes);
+        setPagination(data.pagination);
       } else {
         toast.error(data.message);
       }
@@ -108,55 +115,73 @@ const ListSeatTypes = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {filteredSeatTypes.map((seatType) => (
-            <div
-              key={seatType._id}
-              className="flex gap-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition items-center"
-            >
+        <>
+          <div className="grid gap-4">
+            {filteredSeatTypes.map((seatType) => (
               <div
-                className="w-12 h-12 rounded"
-                style={{ backgroundColor: seatType.color }}
-              ></div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-1">{seatType.name}</h3>
-                <p className="text-sm text-gray-400 mb-1">
-                  Hệ số giá: {seatType.priceMultiplier}x
-                </p>
-                {seatType.description && (
-                  <p className="text-sm text-gray-500 line-clamp-1">
-                    {seatType.description}
+                key={seatType._id}
+                className="flex gap-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition items-center"
+              >
+                <div
+                  className="w-12 h-12 rounded"
+                  style={{ backgroundColor: seatType.color }}
+                ></div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-1">
+                    {seatType.name}
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-1">
+                    Hệ số giá: {seatType.priceMultiplier}x
                   </p>
-                )}
+                  {seatType.description && (
+                    <p className="text-sm text-gray-500 line-clamp-1">
+                      {seatType.description}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() =>
+                      navigate(`/admin/seat-types/${seatType._id}`)
+                    }
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 transition rounded text-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Chi tiết
+                  </button>
+                  <button
+                    onClick={() =>
+                      navigate(`/admin/seat-types/${seatType._id}/edit`)
+                    }
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition rounded text-sm"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Sửa
+                  </button>
+                  <button
+                    onClick={() => handleDelete(seatType._id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 transition rounded text-sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Xóa
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => navigate(`/admin/seat-types/${seatType._id}`)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 transition rounded text-sm"
-                >
-                  <Eye className="w-4 h-4" />
-                  Chi tiết
-                </button>
-                <button
-                  onClick={() =>
-                    navigate(`/admin/seat-types/${seatType._id}/edit`)
-                  }
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition rounded text-sm"
-                >
-                  <Edit className="w-4 h-4" />
-                  Sửa
-                </button>
-                <button
-                  onClick={() => handleDelete(seatType._id)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 transition rounded text-sm"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Xóa
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {pagination && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={setCurrentPage}
+              limit={limit}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setCurrentPage(1);
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );

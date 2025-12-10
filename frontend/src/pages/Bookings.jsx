@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { dummyBookingData } from "../assets/assets";
 import Loading from "../components/Loading";
+import Pagination from "../components/Pagination";
 import BlurCircle from "../components/BlurCircle";
 import timeFormat from "../common/timeFormat";
 import { dateFormat } from "../common/dateFormat";
@@ -14,10 +15,15 @@ const Bookings = () => {
   const currentcy = import.meta.env.VITE_CURRENTCY;
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState(null);
 
   const fetchBookings = async () => {
+    setIsLoading(true);
     try {
       const { data } = await axios.get("/users/bookings", {
+        params: { page: currentPage, limit },
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -25,6 +31,7 @@ const Bookings = () => {
       });
       if (data.success) {
         setBookings(data.bookings);
+        setPagination(data.pagination);
       } else {
         toast.error("Lỗi khi lấy dữ liệu bookings", data.message);
         console.log("Lỗi khi lấy dữ liệu bookings", data.message);
@@ -40,7 +47,7 @@ const Bookings = () => {
     if (user) {
       fetchBookings();
     }
-  }, [user]);
+  }, [user, currentPage, limit]);
 
   return isLoading ? (
     <Loading />
@@ -53,75 +60,100 @@ const Bookings = () => {
 
       <h1 className="text-lg font-semibold mb-4">Vé của tôi</h1>
 
-      {bookings.map((item, index) => (
-        <div
-          key={index}
-          className="flex flex-col md:flex-row justify-between bg-primary/8 border border-primary/20 rounded-lg mt-4 p-2 max-w-3xl"
-        >
-          <div className="flex flex-col md:flex-row">
-            <img
-              src={item.show.movie.image}
-              alt={item.show.movie.title}
-              className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
-            />
-            <div className="flex flex-col p-4">
-              <p className="font-semibold">{item.show.movie.title}</p>
-              <p className="text-gray-400 text-sm">
-                {timeFormat(item.show.movie.runtime)}
-              </p>
-              <p className="text-gray-400 text-sm">
-                {dateFormat(item.show.showDateTime)}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:items-end md:text-right justify-between p-4">
-            <div className="flex flex-col items-start md:items-end gap-2">
-              {item.paidStatus === 3 && (
-                <a href={item.paymentLink} target="_blank">
-                  <button className="bg-primary px-4 py-1.5 text-sm rounded-full font-medium cursor-pointer">
-                    Thanh toán
-                  </button>
-                </a>
-              )}
-              {item.paidStatus === 1 && (
-                <div className="bg-green-700 px-4 py-1.5 text-sm rounded-full font-medium cursor-default whitespace-nowrap">
-                  Đã thanh toán
-                </div>
-              )}
-              {item.paidStatus === 2 && (
-                <div className="bg-red-700 px-4 py-1.5 text-sm rounded-full font-medium cursor-default whitespace-nowrap">
-                  Thanh toán thất bại
-                </div>
-              )}
-              <p className="text-lg font-semibold">
-                {formatCurrency(item.amount)}
-                {currentcy}
-              </p>
-            </div>
-            <div className="text-sm">
-              <p>
-                <span className="text-gray-400">Tổng số vé:</span>{" "}
-                {item.bookedSeats.length}
-              </p>
-              <p>
-                <span className="text-gray-400">Số ghế:</span>{" "}
-                {item.bookedSeats.join(", ")}
-              </p>
-              <p>
-                <span className="text-gray-400">Thời gian đặt:</span>{" "}
-                {new Date(item.createdAt).toLocaleString("vi-VN", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-          </div>
+      {bookings.length === 0 ? (
+        <div className="text-center py-20 text-gray-400">
+          <p>Chưa có vé nào</p>
         </div>
-      ))}
+      ) : (
+        <>
+          {bookings.map((item, index) => (
+            <div
+              key={index}
+              className="flex flex-col md:flex-row justify-between bg-primary/8 border border-primary/20 rounded-lg mt-4 p-2 max-w-3xl"
+            >
+              <div className="flex flex-col md:flex-row">
+                <img
+                  src={item.show.movie.image}
+                  alt={item.show.movie.title}
+                  className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
+                />
+                <div className="flex flex-col p-4">
+                  <p className="font-semibold">{item.show.movie.title}</p>
+                  <p className="text-gray-400 text-sm">
+                    {timeFormat(item.show.movie.runtime)}
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    {dateFormat(item.show.showDateTime)}
+                  </p>
+                  {item.show.room && (
+                    <p className="text-gray-400 text-sm">
+                      Phòng: {item.show.room.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col md:items-end md:text-right justify-between p-4">
+                <div className="flex flex-col items-start md:items-end gap-2">
+                  {item.paidStatus === 3 && (
+                    <a href={item.paymentLink} target="_blank">
+                      <button className="bg-primary px-4 py-1.5 text-sm rounded-full font-medium cursor-pointer">
+                        Thanh toán
+                      </button>
+                    </a>
+                  )}
+                  {item.paidStatus === 1 && (
+                    <div className="bg-green-700 px-4 py-1.5 text-sm rounded-full font-medium cursor-default whitespace-nowrap">
+                      Đã thanh toán
+                    </div>
+                  )}
+                  {item.paidStatus === 2 && (
+                    <div className="bg-red-700 px-4 py-1.5 text-sm rounded-full font-medium cursor-default whitespace-nowrap">
+                      Thanh toán thất bại
+                    </div>
+                  )}
+                  <p className="text-lg font-semibold">
+                    {formatCurrency(item.amount)}
+                    {currentcy}
+                  </p>
+                </div>
+                <div className="text-sm">
+                  <p>
+                    <span className="text-gray-400">Tổng số vé:</span>{" "}
+                    {item.bookedSeats.length}
+                  </p>
+                  <p>
+                    <span className="text-gray-400">Số ghế:</span>{" "}
+                    {item.bookedSeats.join(", ")}
+                  </p>
+                  <p>
+                    <span className="text-gray-400">Thời gian đặt:</span>{" "}
+                    {new Date(item.createdAt).toLocaleString("vi-VN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+          {pagination && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={setCurrentPage}
+              limit={limit}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setCurrentPage(1);
+              }}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 };

@@ -63,14 +63,16 @@ export const createShow = async (req, res) => {
 
 export const listShows = async (req, res) => {
   try {
-    const { search, genreId } = req.query;
+    const { search, genreId, page = 1, limit = 10 } = req.query;
 
     const shows = await Show.find({
       showDateTime: { $gte: new Date() },
-    }).populate({
-      path: "movie",
-      populate: { path: "genreId", model: "Genre" },
-    });
+    })
+      .populate({
+        path: "movie",
+        populate: { path: "genreId", model: "Genre" },
+      })
+      .sort({ createdAt: -1, updatedAt: -1 });
 
     // Lấy unique movies từ shows
     const uniqueMoviesMap = new Map();
@@ -94,7 +96,21 @@ export const listShows = async (req, res) => {
       movies = movies.filter((movie) => movie.genreId === genreId);
     }
 
-    res.status(200).json({ success: true, shows: movies });
+    // Apply pagination
+    const total = movies.length;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const paginatedMovies = movies.slice(skip, skip + parseInt(limit));
+
+    res.status(200).json({
+      success: true,
+      shows: paginatedMovies,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({ success: false, message: error.message });

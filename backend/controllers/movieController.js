@@ -96,7 +96,8 @@ export const updateMovie = async (req, res) => {
 
 export const listMovies = async (req, res) => {
   try {
-    const { search, genreId } = req.query;
+    const { search, genreId, page = 1, limit = 10 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Build query filter
     const filter = {};
@@ -113,9 +114,22 @@ export const listMovies = async (req, res) => {
 
     const movies = await Movie.find(filter)
       .populate("genreId", "name")
-      .sort({ updatedAt: -1 });
+      .sort({ createdAt: -1, updatedAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
 
-    res.status(200).json({ success: true, movies });
+    const total = await Movie.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      movies,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({ success: false, message: error.message });

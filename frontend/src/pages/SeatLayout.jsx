@@ -19,6 +19,7 @@ const SeatLayout = () => {
   const [room, setRoom] = useState(null);
   const [seatTypes, setSeatTypes] = useState({});
   const [seatPrices, setSeatPrices] = useState({});
+  const [isBooking, setIsBooking] = useState(false);
   const navigate = useNavigate();
 
   const { axios, getToken, user } = useAppContext();
@@ -173,6 +174,8 @@ const SeatLayout = () => {
   };
 
   const bookTickets = async () => {
+    if (isBooking) return; // Chặn nếu đang xử lý
+
     try {
       if (!user) {
         return toast("Vui lòng đăng nhập để đặt vé");
@@ -180,6 +183,8 @@ const SeatLayout = () => {
       if (!selectedTime || selectedSeats.length === 0) {
         return toast("Vui lòng chọn thời gian chiếu và ghế ngồi đặt vé");
       }
+
+      setIsBooking(true);
       console.log("---------selected set", selectedSeats);
 
       const { data } = await axios.post(
@@ -203,10 +208,12 @@ const SeatLayout = () => {
         navigate("/bookings");
       } else {
         toast.error(data.message);
+        setIsBooking(false);
       }
     } catch (error) {
       toast.error("Lỗi khi tạo dữ liệu Booking", error);
       console.log("Lỗi khi tạo dữ liệu Booking", error);
+      setIsBooking(false);
     }
   };
 
@@ -373,10 +380,10 @@ const SeatLayout = () => {
 
         <button
           onClick={bookTickets}
-          disabled={selectedSeats.length === 0}
+          disabled={selectedSeats.length === 0 || isBooking}
           className="flex items-center gap-1 mt-6 px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Tiến hành đặt vé
+          {isBooking ? "Đang xử lý..." : "Tiến hành đặt vé"}
           <ArrowRightIcon strokeWidth={3} className="w-4 h-4" />
         </button>
       </div>

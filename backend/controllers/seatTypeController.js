@@ -47,11 +47,35 @@ const createSeatType = async (req, res) => {
 // Lấy danh sách loại ghế
 const listSeatTypes = async (req, res) => {
   try {
-    const seatTypes = await SeatType.find().sort({ name: 1 });
+    const { page = 1, limit = 10, all } = req.query;
+
+    // Nếu có cờ 'all', trả về tất cả không phân trang
+    if (all === "true") {
+      const seatTypes = await SeatType.find().sort({ name: 1 });
+      return res.status(200).json({
+        success: true,
+        seatTypes,
+      });
+    }
+
+    // Phân trang bình thường
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const seatTypes = await SeatType.find()
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await SeatType.countDocuments();
 
     res.status(200).json({
       success: true,
       seatTypes,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error("Lỗi khi lấy danh sách loại ghế:", error);
