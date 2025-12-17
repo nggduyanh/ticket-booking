@@ -9,7 +9,14 @@ export const isAdmin = async (req, res) => {
 
 export const getDashBoardData = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      movieId,
+      roomId,
+      startDate,
+      endDate,
+    } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const bookings = await Booking.find({ paidStatus: 1 }).sort({
@@ -17,8 +24,33 @@ export const getDashBoardData = async (req, res) => {
     });
 
     const filter = { showDateTime: { $gte: new Date() } };
+
+    // Filter by movieId if provided
+    if (movieId) {
+      filter.movie = movieId;
+    }
+
+    // Filter by roomId if provided
+    if (roomId) {
+      filter.room = roomId;
+    }
+
+    // Filter by date range if provided
+    if (startDate || endDate) {
+      filter.showDateTime = {};
+      if (startDate) {
+        filter.showDateTime.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        filter.showDateTime.$lte = endDateTime;
+      }
+    }
+
     const activeShows = await Show.find(filter)
       .populate("movie")
+      .populate("room")
       .sort({ createdAt: -1, updatedAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -53,7 +85,16 @@ export const getDashBoardData = async (req, res) => {
 
 export const getAllShows = async (req, res) => {
   try {
-    const { page = 1, limit = 10, all, movieId } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      all,
+      movieId,
+      roomId,
+      search,
+      startDate,
+      endDate,
+    } = req.query;
 
     const filter = { showDateTime: { $gte: new Date() } };
 
@@ -62,11 +103,37 @@ export const getAllShows = async (req, res) => {
       filter.movie = movieId;
     }
 
+    // Filter by roomId if provided
+    if (roomId) {
+      filter.room = roomId;
+    }
+
+    // Filter by date range if provided
+    if (startDate || endDate) {
+      filter.showDateTime = {};
+      if (startDate) {
+        filter.showDateTime.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        filter.showDateTime.$lte = endDateTime;
+      }
+    }
+
     // Nếu có cờ 'all', trả về tất cả không phân trang
     if (all === "true") {
-      const shows = await Show.find(filter)
+      let shows = await Show.find(filter)
         .populate("movie")
+        .populate("room")
         .sort({ createdAt: -1, updatedAt: -1 });
+
+      // Search by movie title if provided
+      if (search) {
+        shows = shows.filter((show) =>
+          show.movie.title.toLowerCase().includes(search.toLowerCase())
+        );
+      }
 
       return res.status(200).json({
         success: true,
@@ -76,13 +143,20 @@ export const getAllShows = async (req, res) => {
 
     // Phân trang bình thường
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const shows = await Show.find(filter)
+    let shows = await Show.find(filter)
       .populate("movie")
-      .sort({ createdAt: -1, updatedAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+      .populate("room")
+      .sort({ createdAt: -1, updatedAt: -1 });
 
-    const total = await Show.countDocuments(filter);
+    // Search by movie title if provided
+    if (search) {
+      shows = shows.filter((show) =>
+        show.movie.title.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    const total = shows.length;
+    shows = shows.slice(skip, skip + parseInt(limit));
 
     res.status(200).json({
       success: true,
@@ -101,14 +175,31 @@ export const getAllShows = async (req, res) => {
 
 export const getAllBookings = async (req, res) => {
   try {
-    const { page = 1, limit = 10, all } = req.query;
+    const { page = 1, limit = 10, all, search } = req.query;
 
     // Nếu có cờ 'all', trả về tất cả không phân trang
     if (all === "true") {
-      const bookings = await Booking.find({})
+      let bookings = await Booking.find({})
         .populate("user")
         .populate({ path: "show", populate: { path: "movie" } })
         .sort({ createdAt: -1 });
+
+      // Filter out invalid bookings (null user, show, or movie)
+      bookings = bookings.filter(
+        (booking) => booking.user && booking.show && booking.show.movie
+      );
+
+      // Search by user name or movie title
+      if (search) {
+        bookings = bookings.filter((booking) => {
+          const userName = booking.user.name.toLowerCase();
+          const movieTitle = booking.show.movie.title.toLowerCase();
+          const searchLower = search.toLowerCase();
+          return (
+            userName.includes(searchLower) || movieTitle.includes(searchLower)
+          );
+        });
+      }
 
       return res.status(200).json({
         success: true,
@@ -118,14 +209,30 @@ export const getAllBookings = async (req, res) => {
 
     // Phân trang bình thường
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const bookings = await Booking.find({})
+    let bookings = await Booking.find({})
       .populate("user")
       .populate({ path: "show", populate: { path: "movie" } })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+      .sort({ createdAt: -1 });
 
-    const total = await Booking.countDocuments({});
+    // Filter out invalid bookings (null user, show, or movie)
+    bookings = bookings.filter(
+      (booking) => booking.user && booking.show && booking.show.movie
+    );
+
+    // Search by user name or movie title
+    if (search) {
+      bookings = bookings.filter((booking) => {
+        const userName = booking.user.name.toLowerCase();
+        const movieTitle = booking.show.movie.title.toLowerCase();
+        const searchLower = search.toLowerCase();
+        return (
+          userName.includes(searchLower) || movieTitle.includes(searchLower)
+        );
+      });
+    }
+
+    const total = bookings.length;
+    bookings = bookings.slice(skip, skip + parseInt(limit));
 
     res.status(200).json({
       success: true,

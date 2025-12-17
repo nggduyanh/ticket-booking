@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Edit, Trash2, Eye, Plus, Search } from "lucide-react";
 import Loading from "../../components/Loading";
 import Pagination from "../../components/Pagination";
+import Autocomplete from "../../components/Autocomplete";
 import timeFormat from "../../common/timeFormat";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -13,6 +14,10 @@ const ListMovies = () => {
   const [genres, setGenres] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    genreId: "",
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -26,12 +31,15 @@ const ListMovies = () => {
 
   useEffect(() => {
     fetchMovies();
-  }, [currentPage, limit, searchTerm, selectedGenre]);
+  }, [currentPage, limit, appliedFilters]);
 
-  const fetchGenres = async () => {
+  const fetchGenres = async (searchKeyword = "") => {
     try {
+      const params = { page: 1, limit: 10 };
+      if (searchKeyword) params.search = searchKeyword;
+
       const { data } = await axios.get("/genres/list", {
-        params: { all: true },
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -49,8 +57,8 @@ const ListMovies = () => {
     setIsLoading(true);
     try {
       const params = { page: currentPage, limit };
-      if (searchTerm) params.search = searchTerm;
-      if (selectedGenre) params.genreId = selectedGenre;
+      if (appliedFilters.search) params.search = appliedFilters.search;
+      if (appliedFilters.genreId) params.genreId = appliedFilters.genreId;
 
       const { data } = await axios.get("/movies/list", {
         params,
@@ -71,6 +79,14 @@ const ListMovies = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleFilter = () => {
+    setAppliedFilters({
+      search: searchTerm,
+      genreId: selectedGenre,
+    });
+    setCurrentPage(1);
   };
 
   const handleDelete = async (id) => {
@@ -112,7 +128,7 @@ const ListMovies = () => {
       </div>
 
       {/* Search and Filter */}
-      <div className="mb-6 flex gap-4">
+      <div className="mb-6 flex gap-3">
         {/* Search Input */}
         <div className="flex-1 relative">
           <Search
@@ -124,23 +140,30 @@ const ListMovies = () => {
             placeholder="Tìm kiếm theo tên phim..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleFilter()}
             className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
           />
         </div>
 
         {/* Genre Filter */}
-        <select
+        <Autocomplete
+          options={genres}
           value={selectedGenre}
-          onChange={(e) => setSelectedGenre(e.target.value)}
-          className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+          onChange={setSelectedGenre}
+          onSearch={fetchGenres}
+          placeholder="Chọn thể loại..."
+          displayKey="name"
+          valueKey="_id"
+          className="min-w-[200px]"
+        />
+
+        {/* Filter Button */}
+        <button
+          onClick={handleFilter}
+          className="px-6 py-2 bg-primary hover:bg-primary-dull transition rounded-lg font-medium cursor-pointer"
         >
-          <option value="">Tất cả thể loại</option>
-          {genres.map((genre) => (
-            <option key={genre._id} value={genre._id}>
-              {genre.name}
-            </option>
-          ))}
-        </select>
+          Lọc
+        </button>
       </div>
 
       {/* {error && (

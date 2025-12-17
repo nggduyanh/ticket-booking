@@ -36,19 +36,55 @@ export const createShow = async (req, res) => {
     }
 
     const shows = [];
-    showInputs?.forEach((showInput) => {
+    const duplicates = [];
+
+    // Build shows array and check for duplicates
+    for (const showInput of showInputs || []) {
       const showDate = showInput.date;
-      showInput?.time?.forEach((time) => {
+      for (const time of showInput?.time || []) {
         const dateTimeString = `${showDate}T${time}`;
-        shows.push({
-          movie: movieId,
+        const showDateTime = new Date(dateTimeString);
+
+        // Check if show already exists with same room and datetime
+        const existingShow = await Show.findOne({
           room: roomId,
-          showDateTime: new Date(dateTimeString),
-          showPrice: priceInteger,
-          occupiedSeats: {},
+          showDateTime: showDateTime,
         });
+
+        if (existingShow) {
+          duplicates.push({
+            date: showDate,
+            time: time,
+            dateTime: showDateTime.toLocaleString("vi-VN", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          });
+        } else {
+          shows.push({
+            movie: movieId,
+            room: roomId,
+            showDateTime: showDateTime,
+            showPrice: priceInteger,
+            occupiedSeats: {},
+          });
+        }
+      }
+    }
+
+    // If there are duplicates, return error with details
+    if (duplicates.length > 0) {
+      const duplicateList = duplicates.map((d) => d.dateTime).join(", ");
+      return res.status(200).json({
+        success: false,
+        message: `Suất chiếu đã tồn tại cho phòng chiếu này tại: ${duplicateList}`,
+        duplicates: duplicates,
       });
-    });
+    }
+
     if (shows && shows.length > 0) {
       await Show.insertMany(shows);
     }

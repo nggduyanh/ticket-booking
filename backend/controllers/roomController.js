@@ -50,11 +50,18 @@ const createRoom = async (req, res) => {
 // Lấy danh sách phòng chiếu
 const listRooms = async (req, res) => {
   try {
-    const { page = 1, limit = 10, all } = req.query;
+    const { page = 1, limit = 10, all, search } = req.query;
+
+    const filter = {};
+
+    // Search by name if provided
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
 
     // Nếu có cờ 'all', trả về tất cả không phân trang
     if (all === "true") {
-      const rooms = await Room.find().sort({ name: 1 });
+      const rooms = await Room.find(filter).sort({ name: 1 });
       return res.status(200).json({
         success: true,
         rooms,
@@ -63,12 +70,12 @@ const listRooms = async (req, res) => {
 
     // Phân trang bình thường
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const rooms = await Room.find()
+    const rooms = await Room.find(filter)
       .sort({ name: 1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Room.countDocuments();
+    const total = await Room.countDocuments(filter);
 
     res.status(200).json({
       success: true,

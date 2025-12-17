@@ -4,14 +4,17 @@ import { assets, dummyDateTimeData, dummyShowsData } from "../assets/assets";
 import Loading from "../components/Loading";
 import { ArrowRightIcon, ClockIcon } from "lucide-react";
 import isoTimeFormat from "../common/isoTimeFormat";
+import formatCurrency from "../common/formatCurrency";
 import BlurCircle from "../components/BlurCircle";
 import { toast } from "react-hot-toast";
 import { useAppContext } from "../context/AppContext";
+import { useClerk } from "@clerk/clerk-react";
 
 const SeatLayout = () => {
   const { id, date } = useParams();
   const [searchParams] = useSearchParams();
   const roomIdParam = searchParams.get("roomId");
+  const currency = import.meta.env.VITE_CURRENTCY || "đ";
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [selectedTime, setSelectedTime] = useState(null);
   const [show, setShow] = useState(null);
@@ -22,7 +25,8 @@ const SeatLayout = () => {
   const [isBooking, setIsBooking] = useState(false);
   const navigate = useNavigate();
 
-  const { axios, getToken, user } = useAppContext();
+  const { axios, getToken, user, isAdmin } = useAppContext();
+  const { openSignIn } = useClerk();
 
   const getShow = async () => {
     try {
@@ -178,7 +182,10 @@ const SeatLayout = () => {
 
     try {
       if (!user) {
-        return toast("Vui lòng đăng nhập để đặt vé");
+        return openSignIn();
+      }
+      if (isAdmin) {
+        return toast.error("Quản trị viên không thể đặt vé");
       }
       if (!selectedTime || selectedSeats.length === 0) {
         return toast("Vui lòng chọn thời gian chiếu và ghế ngồi đặt vé");
@@ -300,21 +307,29 @@ const SeatLayout = () => {
       <div className="w-60 bg-primary/10 border border-primary/20 rounded-lg py-10 h-max md:sticky md:top-30">
         <p className="text-lg font-semibold px-6">Giờ chiếu</p>
         <div className="mt-5 space-y-1">
-          {show.dateTime[date]?.map((item) => (
-            <div
-              key={item.time}
-              onClick={() => setSelectedTime(item)}
-              className={`flex items-center gap-2 px-6 py-2 w-max rounded-r-md cursor-pointer transition 
+          {show.dateTime[date]
+            ?.sort((a, b) => new Date(a.time) - new Date(b.time))
+            .map((item) => (
+              <div
+                key={item.time}
+                onClick={() => setSelectedTime(item)}
+                className={`flex flex-col gap-1 px-6 py-2 rounded-r-md cursor-pointer transition 
                 ${
                   selectedTime?.time === item.time
                     ? "bg-primary text-white"
                     : "hover:bg-primary/20"
                 }`}
-            >
-              <ClockIcon className="w-4 h-4" />
-              <p className="text-sm">{isoTimeFormat(item.time)}</p>
-            </div>
-          ))}
+              >
+                <div className="flex items-center gap-2">
+                  <ClockIcon className="w-4 h-4" />
+                  <p className="text-sm">{isoTimeFormat(item.time)}</p>
+                </div>
+                <p className="text-xs font-semibold ml-6">
+                  {formatCurrency(item.showPrice)}
+                  {currency}
+                </p>
+              </div>
+            ))}
         </div>
       </div>
       <div className="relative flex-1 flex flex-col items-center max-md:mt-16">

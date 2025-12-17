@@ -3,6 +3,7 @@ import axios from "axios";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import Loading from "../../components/Loading";
+import Autocomplete from "../../components/Autocomplete";
 import { useNavigate } from "react-router-dom";
 
 const CreateMovie = () => {
@@ -23,9 +24,13 @@ const CreateMovie = () => {
     fetchGenres();
   }, []);
 
-  const fetchGenres = async () => {
+  const fetchGenres = async (searchKeyword = "") => {
     try {
+      const params = { page: 1, limit: 10 };
+      if (searchKeyword) params.search = searchKeyword;
+
       const { data } = await axios.get("/genres/list", {
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -68,6 +73,12 @@ const CreateMovie = () => {
     try {
       if (!imageFile) {
         toast.error("Vui lòng chọn ảnh phim");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!formData.genreId) {
+        toast.error("Vui lòng chọn thể loại phim");
         setIsLoading(false);
         return;
       }
@@ -133,7 +144,9 @@ const CreateMovie = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Tiêu đề</label>
+          <label className="block text-sm font-medium mb-2">
+            Tiêu đề <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             name="title"
@@ -146,7 +159,9 @@ const CreateMovie = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Ảnh phim</label>
+          <label className="block text-sm font-medium mb-2">
+            Ảnh phim <span className="text-red-500">*</span>
+          </label>
           <input
             type="file"
             accept="image/*"
@@ -166,7 +181,9 @@ const CreateMovie = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Mô tả</label>
+          <label className="block text-sm font-medium mb-2">
+            Mô tả <span className="text-red-500">*</span>
+          </label>
           <textarea
             name="description"
             value={formData.description}
@@ -180,7 +197,7 @@ const CreateMovie = () => {
 
         <div>
           <label className="block text-sm font-medium mb-2">
-            Thời lượng (phút)
+            Thời lượng (phút) <span className="text-red-500">*</span>
           </label>
           <input
             type="number"
@@ -196,21 +213,19 @@ const CreateMovie = () => {
 
         <div>
           <label className="block text-sm font-medium mb-2">
-            Thể loại phim
+            Thể loại phim <span className="text-red-500">*</span>
           </label>
-          <select
-            name="genreId"
+          <Autocomplete
+            options={genres}
             value={formData.genreId}
-            onChange={handleChange}
-            className="w-full px-4 py-2 rounded bg-gray-800 border border-gray-700 focus:border-primary focus:outline-none"
-          >
-            <option value="">-- Chọn thể loại --</option>
-            {genres.map((genre) => (
-              <option key={genre._id} value={genre._id}>
-                {genre.name}
-              </option>
-            ))}
-          </select>
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, genreId: value }))
+            }
+            onSearch={fetchGenres}
+            placeholder="Chọn thể loại..."
+            displayKey="name"
+            valueKey="_id"
+          />
         </div>
 
         <button

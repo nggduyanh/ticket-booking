@@ -88,7 +88,9 @@ const EditGenre = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Tên thể loại</label>
+          <label className="block text-sm font-medium mb-2">
+            Tên thể loại <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             name="name"

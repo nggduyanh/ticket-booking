@@ -45,11 +45,18 @@ const createGenre = async (req, res) => {
 // Lấy danh sách tất cả thể loại
 const listGenres = async (req, res) => {
   try {
-    const { page = 1, limit = 10, all } = req.query;
+    const { page = 1, limit = 10, all, search } = req.query;
+
+    const filter = {};
+
+    // Search by name if provided
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
 
     // Nếu có cờ 'all', trả về tất cả không phân trang
     if (all === "true") {
-      const genres = await Genre.find().sort({ name: 1 });
+      const genres = await Genre.find(filter).sort({ name: 1 });
       return res.status(200).json({
         success: true,
         genres,
@@ -58,12 +65,12 @@ const listGenres = async (req, res) => {
 
     // Phân trang bình thường
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const genres = await Genre.find()
+    const genres = await Genre.find(filter)
       .sort({ name: 1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Genre.countDocuments();
+    const total = await Genre.countDocuments(filter);
 
     res.status(200).json({
       success: true,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { dummyBookingData } from "../assets/assets";
 import Loading from "../components/Loading";
+import Autocomplete from "../components/Autocomplete";
 import Pagination from "../components/Pagination";
 import BlurCircle from "../components/BlurCircle";
 import timeFormat from "../common/timeFormat";
@@ -19,11 +20,32 @@ const Bookings = () => {
   const [limit, setLimit] = useState(10);
   const [pagination, setPagination] = useState(null);
 
+  // Filter states
+  const [movies, setMovies] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [selectedMovie, setSelectedMovie] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [appliedMovie, setAppliedMovie] = useState("");
+  const [appliedRoom, setAppliedRoom] = useState("");
+  const [appliedStatus, setAppliedStatus] = useState("");
+
+  const paymentStatuses = [
+    { _id: "1", name: "Đã thanh toán" },
+    { _id: "2", name: "Thanh toán thất bại" },
+    { _id: "3", name: "Chờ thanh toán" },
+  ];
+
   const fetchBookings = async () => {
     setIsLoading(true);
     try {
+      const params = { page: currentPage, limit };
+      if (appliedMovie) params.movieId = appliedMovie;
+      if (appliedRoom) params.roomId = appliedRoom;
+      if (appliedStatus) params.paidStatus = appliedStatus;
+
       const { data } = await axios.get("/users/bookings", {
-        params: { page: currentPage, limit },
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -43,11 +65,65 @@ const Bookings = () => {
     setIsLoading(false);
   };
 
+  const fetchMovies = async (searchKeyword = "") => {
+    try {
+      const params = { page: 1, limit: 10 };
+      if (searchKeyword) params.search = searchKeyword;
+
+      const { data } = await axios.get("/movies/list", {
+        params,
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+
+      if (data.success) {
+        setMovies(data.movies);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchRooms = async (searchKeyword = "") => {
+    try {
+      const params = { page: 1, limit: 10 };
+      if (searchKeyword) params.search = searchKeyword;
+
+      const { data } = await axios.get("/rooms/list", {
+        params,
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+
+      if (data.success) {
+        setRooms(data.rooms);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleFilter = () => {
+    setAppliedMovie(selectedMovie);
+    setAppliedRoom(selectedRoom);
+    setAppliedStatus(selectedStatus);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    fetchMovies();
+    fetchRooms();
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchBookings();
     }
-  }, [user, currentPage, limit]);
+  }, [user, currentPage, limit, appliedMovie, appliedRoom, appliedStatus]);
 
   return isLoading ? (
     <Loading />
@@ -58,7 +134,64 @@ const Bookings = () => {
         <BlurCircle bottom="0px" left="600px" />
       </div>
 
-      <h1 className="text-lg font-semibold mb-4">Vé của tôi</h1>
+      <h1 className="text-lg font-semibold mb-6">Vé của tôi</h1>
+
+      {/* Filter Section */}
+      <div className="mb-6">
+        <p className="text-md font-medium mb-4">Lọc vé</p>
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-medium mb-2">Phim</label>
+            <Autocomplete
+              options={movies}
+              value={selectedMovie}
+              onChange={setSelectedMovie}
+              onSearch={fetchMovies}
+              placeholder="Chọn phim..."
+              displayKey="title"
+              valueKey="_id"
+            />
+          </div>
+
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-medium mb-2">
+              Phòng chiếu
+            </label>
+            <Autocomplete
+              options={rooms.map((r) => ({
+                ...r,
+                displayName: `${r.name} (${r.totalSeats} ghế)`,
+              }))}
+              value={selectedRoom}
+              onChange={setSelectedRoom}
+              onSearch={fetchRooms}
+              placeholder="Chọn phòng..."
+              displayKey="displayName"
+              valueKey="_id"
+            />
+          </div>
+
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-medium mb-2">Trạng thái</label>
+            <Autocomplete
+              options={paymentStatuses}
+              value={selectedStatus}
+              onChange={setSelectedStatus}
+              onSearch={() => {}}
+              placeholder="Chọn trạng thái..."
+              displayKey="name"
+              valueKey="_id"
+            />
+          </div>
+
+          <button
+            onClick={handleFilter}
+            className="px-6 py-2 bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer"
+          >
+            Lọc
+          </button>
+        </div>
+      </div>
 
       {bookings.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
@@ -66,6 +199,9 @@ const Bookings = () => {
         </div>
       ) : (
         <>
+          <p className="text-sm text-gray-400 mb-2">
+            Tìm thấy {pagination?.total || 0} vé
+          </p>
           {bookings.map((item, index) => (
             <div
               key={index}

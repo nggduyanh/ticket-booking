@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Loading from "../../components/Loading";
+import Autocomplete from "../../components/Autocomplete";
 import Title from "../../components/admin/Title";
 import BlurCircle from "../../components/BlurCircle";
 import { dateFormat } from "../../common/dateFormat";
@@ -32,6 +33,18 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [pagination, setPagination] = useState(null);
+
+  // Filter states
+  const [movies, setMovies] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [selectedMovie, setSelectedMovie] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [appliedMovie, setAppliedMovie] = useState("");
+  const [appliedRoom, setAppliedRoom] = useState("");
+  const [appliedStartDate, setAppliedStartDate] = useState("");
+  const [appliedEndDate, setAppliedEndDate] = useState("");
 
   const dashboardCards = [
     {
@@ -63,8 +76,14 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
+      const params = { page: currentPage, limit };
+      if (appliedMovie) params.movieId = appliedMovie;
+      if (appliedRoom) params.roomId = appliedRoom;
+      if (appliedStartDate) params.startDate = appliedStartDate;
+      if (appliedEndDate) params.endDate = appliedEndDate;
+
       const { data } = await axios.get("/admin/dashboard", {
-        params: { page: currentPage, limit },
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -84,11 +103,74 @@ const Dashboard = () => {
     setIsLoading(false);
   };
 
+  const fetchMovies = async (searchKeyword = "") => {
+    try {
+      const params = { page: 1, limit: 10 };
+      if (searchKeyword) params.search = searchKeyword;
+
+      const { data } = await axios.get("/movies/list", {
+        params,
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+
+      if (data.success) {
+        setMovies(data.movies);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchRooms = async (searchKeyword = "") => {
+    try {
+      const params = { page: 1, limit: 10 };
+      if (searchKeyword) params.search = searchKeyword;
+
+      const { data } = await axios.get("/rooms/list", {
+        params,
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+
+      if (data.success) {
+        setRooms(data.rooms);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleFilter = () => {
+    setAppliedMovie(selectedMovie);
+    setAppliedRoom(selectedRoom);
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    fetchMovies();
+    fetchRooms();
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchDashboardData();
     }
-  }, [user, currentPage, limit]);
+  }, [
+    user,
+    currentPage,
+    limit,
+    appliedMovie,
+    appliedRoom,
+    appliedStartDate,
+    appliedEndDate,
+  ]);
   return isLoading ? (
     <Loading />
   ) : (
@@ -113,7 +195,72 @@ const Dashboard = () => {
           ))}
         </div>
       </div>
-      <p className="mt-10 text-lg font-medium">Suất chiếu hoạt động</p>
+
+      {/* Filter Section */}
+      <div className="mt-10">
+        <p className="text-lg font-medium mb-4">Lọc suất chiếu hoạt động</p>
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-medium mb-2">Phim</label>
+            <Autocomplete
+              options={movies}
+              value={selectedMovie}
+              onChange={setSelectedMovie}
+              onSearch={fetchMovies}
+              placeholder="Chọn phim..."
+              displayKey="title"
+              valueKey="_id"
+            />
+          </div>
+
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-medium mb-2">
+              Phòng chiếu
+            </label>
+            <Autocomplete
+              options={rooms.map((r) => ({
+                ...r,
+                displayName: `${r.name} (${r.totalSeats} ghế)`,
+              }))}
+              value={selectedRoom}
+              onChange={setSelectedRoom}
+              onSearch={fetchRooms}
+              placeholder="Chọn phòng..."
+              displayKey="displayName"
+              valueKey="_id"
+            />
+          </div>
+
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-medium mb-2">Từ ngày</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
+            />
+          </div>
+
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-medium mb-2">Đến ngày</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
+            />
+          </div>
+
+          <button
+            onClick={handleFilter}
+            className="px-6 py-2 bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer"
+          >
+            Lọc
+          </button>
+        </div>
+      </div>
+
+      <p className="mt-6 text-lg font-medium">Suất chiếu hoạt động</p>
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Loading />
@@ -140,14 +287,17 @@ const Dashboard = () => {
                     {currency}
                   </p>
                 </div>
-                <p className="px-2 pt-2 text-sm text-gray-500">
+                <p className="px-2 text-sm text-gray-400">
+                  Phòng: {show.room?.name || "N/A"}
+                </p>
+                <p className="px-2 pt-1 text-sm text-gray-500">
                   {dateFormat(show.showDateTime)} -{" "}
                   {timeFormat(show.movie.runtime)}
                 </p>
               </div>
             ))}
           </div>
-          {pagination && pagination.totalPages > 1 && (
+          {pagination && (
             <Pagination
               currentPage={currentPage}
               totalPages={pagination.totalPages}

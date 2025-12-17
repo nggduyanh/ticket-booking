@@ -45,16 +45,20 @@ const NavBar = () => {
         </Link>
         <Link
           to="/bookings"
-          onClick={() => {
-            scrollTo(0, 0);
-            setIsMenuOpen(false);
+          onClick={(e) => {
+            if (!user) {
+              e.preventDefault();
+              openSignIn();
+            } else {
+              scrollTo(0, 0);
+              setIsMenuOpen(false);
+            }
           }}
         >
           Vé đã đặt
         </Link>
       </div>
       <div className="flex items-center gap-8">
-        <SearchIcon className="max-md:hidden w-6 h-6 cursor-pointer" />
         {!user ? (
           <button
             onClick={openSignIn}

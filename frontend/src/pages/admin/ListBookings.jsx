@@ -15,8 +15,8 @@ const ListBookings = () => {
 
   const currency = import.meta.env.VITE_CURRENTCY || "đ";
   const [bookings, setBookings] = useState([]);
-  const [filteredBookings, setFilteredBookings] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -25,8 +25,11 @@ const ListBookings = () => {
   const getAllBookings = async () => {
     setIsLoading(true);
     try {
+      const params = { page: currentPage, limit };
+      if (appliedSearch) params.search = appliedSearch;
+
       const { data } = await axios.get("/admin/all-bookings", {
-        params: { page: currentPage, limit },
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -34,31 +37,25 @@ const ListBookings = () => {
       });
       if (data.success) {
         setBookings(data.bookings);
-        setFilteredBookings(data.bookings);
         setPagination(data.pagination);
       }
     } catch (error) {
-      toast.error("Ỗi khi lấy dữ liệu bookings", error);
-      console.log("Ỗi khi lấy dữ liệu bookings", error);
+      toast.error("Lỗi khi lấy dữ liệu bookings", error);
+      console.log("Lỗi khi lấy dữ liệu bookings", error);
     }
     setIsLoading(false);
+  };
+
+  const handleFilter = () => {
+    setAppliedSearch(searchTerm);
+    setCurrentPage(1);
   };
 
   useEffect(() => {
     if (user) {
       getAllBookings();
     }
-  }, [user, currentPage, limit]);
-
-  useEffect(() => {
-    const filtered = bookings.filter((booking) => {
-      const userName = booking.user.name.toLowerCase();
-      const movieTitle = booking.show.movie.title.toLowerCase();
-      const search = searchTerm.toLowerCase();
-      return userName.includes(search) || movieTitle.includes(search);
-    });
-    setFilteredBookings(filtered);
-  }, [searchTerm, bookings]);
+  }, [user, currentPage, limit, appliedSearch]);
 
   return isLoading ? (
     <Loading />
@@ -66,21 +63,30 @@ const ListBookings = () => {
     <>
       <Title text1="List" text2="Bookings" />
 
-      <div className="mb-6 relative">
-        <Search
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-          size={20}
-        />
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo tên người dùng hoặc tên phim..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
-        />
+      <div className="mb-6 flex gap-3">
+        <div className="flex-1 relative">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên người dùng hoặc tên phim..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleFilter()}
+            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
+          />
+        </div>
+        <button
+          onClick={handleFilter}
+          className="px-6 py-2 bg-primary hover:bg-primary-dull transition rounded-lg font-medium cursor-pointer"
+        >
+          Lọc
+        </button>
       </div>
 
-      {filteredBookings.length === 0 ? (
+      {bookings.length === 0 ? (
         <p className="text-gray-400 text-center py-8">
           {searchTerm ? "Không tìm thấy đặt vé phù hợp" : "Chưa có đặt vé nào"}
         </p>
@@ -98,7 +104,7 @@ const ListBookings = () => {
                 </tr>
               </thead>
               <tbody className="text-sm font-light">
-                {filteredBookings.map((item, index) => (
+                {bookings.map((item, index) => (
                   <tr
                     key={index}
                     className="border-b border-primary/20 bg-primary/5 even:bg-primary/10"

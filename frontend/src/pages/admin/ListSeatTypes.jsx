@@ -9,8 +9,8 @@ import toast from "react-hot-toast";
 
 const ListSeatTypes = () => {
   const [seatTypes, setSeatTypes] = useState([]);
-  const [filteredSeatTypes, setFilteredSeatTypes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -18,22 +18,14 @@ const ListSeatTypes = () => {
   const navigate = useNavigate();
   const { getToken } = useAppContext();
 
-  useEffect(() => {
-    fetchSeatTypes();
-  }, [currentPage, limit]);
-
-  useEffect(() => {
-    const filtered = seatTypes.filter((st) =>
-      st.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredSeatTypes(filtered);
-  }, [searchTerm, seatTypes]);
-
   const fetchSeatTypes = async () => {
     setIsLoading(true);
     try {
+      const params = { page: currentPage, limit };
+      if (appliedSearch) params.search = appliedSearch;
+
       const { data } = await axios.get("/seat-types/list", {
-        params: { page: currentPage, limit },
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -41,7 +33,6 @@ const ListSeatTypes = () => {
       });
       if (data.success) {
         setSeatTypes(data.seatTypes);
-        setFilteredSeatTypes(data.seatTypes);
         setPagination(data.pagination);
       } else {
         toast.error(data.message);
@@ -53,6 +44,15 @@ const ListSeatTypes = () => {
       setIsLoading(false);
     }
   };
+
+  const handleFilter = () => {
+    setAppliedSearch(searchTerm);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    fetchSeatTypes();
+  }, [currentPage, limit, appliedSearch]);
 
   const handleDelete = async (id) => {
     if (!confirm("Bạn có chắc chắn muốn xóa loại ghế này không?")) return;
@@ -92,21 +92,30 @@ const ListSeatTypes = () => {
       </div>
 
       {/* Search */}
-      <div className="mb-6 relative">
-        <Search
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-          size={20}
-        />
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo tên loại ghế..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
-        />
+      <div className="mb-6 flex gap-3">
+        <div className="flex-1 relative">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên loại ghế..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleFilter()}
+            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
+          />
+        </div>
+        <button
+          onClick={handleFilter}
+          className="px-6 py-2 bg-primary hover:bg-primary-dull transition rounded-lg font-medium cursor-pointer"
+        >
+          Lọc
+        </button>
       </div>
 
-      {filteredSeatTypes.length === 0 ? (
+      {seatTypes.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <p>
             {searchTerm
@@ -117,7 +126,7 @@ const ListSeatTypes = () => {
       ) : (
         <>
           <div className="grid gap-4">
-            {filteredSeatTypes.map((seatType) => (
+            {seatTypes.map((seatType) => (
               <div
                 key={seatType._id}
                 className="flex gap-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition items-center"

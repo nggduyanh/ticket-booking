@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "react-hot-toast";
+import Autocomplete from "../../components/Autocomplete";
 import { useAppContext } from "../../context/AppContext";
 
 const CreateRoom = () => {
@@ -22,9 +23,13 @@ const CreateRoom = () => {
     fetchSeatTypes();
   }, []);
 
-  const fetchSeatTypes = async () => {
+  const fetchSeatTypes = async (searchKeyword = "") => {
     try {
+      const params = { page: 1, limit: 10 };
+      if (searchKeyword) params.search = searchKeyword;
+
       const { data } = await axios.get("/seat-types/list", {
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -275,17 +280,19 @@ const CreateRoom = () => {
             <label className="block text-sm font-medium mb-2">
               Loại ghế mặc định
             </label>
-            <select
+            <Autocomplete
+              options={seatTypes.map((st) => ({
+                ...st,
+                displayName: `${st.name} (${st.priceMultiplier}x)`,
+              }))}
               value={selectedSeatType}
-              onChange={(e) => setSelectedSeatType(e.target.value)}
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {seatTypes.map((st) => (
-                <option key={st._id} value={st._id}>
-                  {st.name} ({st.priceMultiplier}x)
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedSeatType}
+              onSearch={fetchSeatTypes}
+              placeholder="Tìm loại ghế..."
+              displayKey="displayName"
+              valueKey="_id"
+              className="w-full"
+            />
             <p className="text-xs text-gray-400 mt-1">
               💡 Click vào ghế để đổi loại, hoặc click vào chữ cái hàng (A, B,
               C...) để áp dụng cho cả hàng

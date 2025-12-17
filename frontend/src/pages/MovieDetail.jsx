@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { dummyDateTimeData, dummyShowsData } from "../assets/assets";
 import BlurCircle from "../components/BlurCircle";
+import Autocomplete from "../components/Autocomplete";
 import { StarIcon } from "lucide-react";
 import timeFormat from "../common/timeFormat";
 import DateSelect from "../components/DateSelect";
@@ -138,19 +139,20 @@ const MovieDetail = () => {
             <p className="text-gray-400 text-sm mb-4">
               Vui lòng chọn phòng chiếu để xem lịch chiếu
             </p>
-            <select
-              value={selectedRoom}
-              onChange={(e) => handleRoomChange(e.target.value)}
-              className="w-full md:w-96 px-4 py-3 bg-gray-800 border border-gray-700 rounded-md 
-              focus:ring-2 focus:ring-primary focus:border-transparent text-white"
-            >
-              <option value="">-- Chọn phòng chiếu --</option>
-              {rooms.map((room) => (
-                <option key={room._id} value={room._id}>
-                  {room.name}
-                </option>
-              ))}
-            </select>
+            <div className="max-w-md">
+              <Autocomplete
+                options={rooms.map((r) => ({
+                  ...r,
+                  displayName: `${r.name} (${r.totalSeats} ghế)`,
+                }))}
+                value={selectedRoom}
+                onChange={handleRoomChange}
+                onSearch={() => {}}
+                placeholder="-- Chọn phòng chiếu --"
+                displayKey="displayName"
+                valueKey="_id"
+              />
+            </div>
           </div>
         ) : (
           <div className="text-center py-10">

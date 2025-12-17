@@ -3,6 +3,7 @@ import axios from "axios";
 import { Search } from "lucide-react";
 import MovieCard from "../components/MovieCard";
 import Pagination from "../components/Pagination";
+import Autocomplete from "../components/Autocomplete";
 import { useAppContext } from "../context/AppContext";
 
 const Movies = () => {
@@ -11,6 +12,10 @@ const Movies = () => {
   const [genres, setGenres] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    genreId: "",
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(12);
@@ -22,12 +27,15 @@ const Movies = () => {
 
   useEffect(() => {
     fetchMovies();
-  }, [searchTerm, selectedGenre, currentPage, limit]);
+  }, [appliedFilters, currentPage, limit]);
 
-  const fetchGenres = async () => {
+  const fetchGenres = async (searchKeyword = "") => {
     try {
+      const params = { page: 1, limit: 10 };
+      if (searchKeyword) params.search = searchKeyword;
+
       const { data } = await axios.get("/genres/list", {
-        params: { all: true },
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -45,8 +53,8 @@ const Movies = () => {
     setIsLoading(true);
     try {
       const params = { page: currentPage, limit };
-      if (searchTerm) params.search = searchTerm;
-      if (selectedGenre) params.genreId = selectedGenre;
+      if (appliedFilters.search) params.search = appliedFilters.search;
+      if (appliedFilters.genreId) params.genreId = appliedFilters.genreId;
 
       const { data } = await axios.get("/shows/list", {
         params,
@@ -66,6 +74,14 @@ const Movies = () => {
     }
   };
 
+  const handleFilter = () => {
+    setAppliedFilters({
+      search: searchTerm,
+      genreId: selectedGenre,
+    });
+    setCurrentPage(1);
+  };
+
   return (
     <div className="relative my-40 mb-60 px-6 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[80vh]">
       <h1 className="text-lg font-medium my-4">Đang chiếu</h1>
@@ -79,21 +95,26 @@ const Movies = () => {
             placeholder="Tìm kiếm phim..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleFilter()}
             className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 focus:border-primary focus:outline-none"
           />
         </div>
-        <select
+        <Autocomplete
+          options={genres}
           value={selectedGenre}
-          onChange={(e) => setSelectedGenre(e.target.value)}
-          className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 focus:border-primary focus:outline-none"
+          onChange={setSelectedGenre}
+          onSearch={fetchGenres}
+          placeholder="Chọn thể loại..."
+          displayKey="name"
+          valueKey="_id"
+          className="min-w-[200px]"
+        />
+        <button
+          onClick={handleFilter}
+          className="px-6 py-2 bg-primary hover:bg-primary/90 transition rounded-lg font-medium"
         >
-          <option value="">Tất cả thể loại</option>
-          {genres.map((genre) => (
-            <option key={genre._id} value={genre._id}>
-              {genre.name}
-            </option>
-          ))}
-        </select>
+          Lọc
+        </button>
       </div>
 
       {isLoading ? (

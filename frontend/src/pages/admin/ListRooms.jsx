@@ -9,8 +9,8 @@ import toast from "react-hot-toast";
 
 const ListRooms = () => {
   const [rooms, setRooms] = useState([]);
-  const [filteredRooms, setFilteredRooms] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -18,21 +18,14 @@ const ListRooms = () => {
   const navigate = useNavigate();
   const { getToken } = useAppContext();
 
-  useEffect(() => {
-    fetchRooms();
-  }, [currentPage, limit]);
-  useEffect(() => {
-    const filtered = rooms.filter((room) =>
-      room.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredRooms(filtered);
-  }, [searchTerm, rooms]);
-
   const fetchRooms = async () => {
     setIsLoading(true);
     try {
+      const params = { page: currentPage, limit };
+      if (appliedSearch) params.search = appliedSearch;
+
       const { data } = await axios.get("/rooms/list", {
-        params: { page: currentPage, limit },
+        params,
         headers: {
           Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
@@ -40,7 +33,6 @@ const ListRooms = () => {
       });
       if (data.success) {
         setRooms(data.rooms);
-        setFilteredRooms(data.rooms);
         setPagination(data.pagination);
       } else {
         toast.error(data.message);
@@ -52,6 +44,15 @@ const ListRooms = () => {
       setIsLoading(false);
     }
   };
+
+  const handleFilter = () => {
+    setAppliedSearch(searchTerm);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    fetchRooms();
+  }, [currentPage, limit, appliedSearch]);
 
   const handleDelete = async (id) => {
     if (!confirm("Bạn có chắc chắn muốn xóa phòng chiếu này không?")) return;
@@ -91,21 +92,30 @@ const ListRooms = () => {
       </div>
 
       {/* Search */}
-      <div className="mb-6 relative">
-        <Search
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-          size={20}
-        />
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo tên phòng chiếu..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
-        />
+      <div className="mb-6 flex gap-3">
+        <div className="flex-1 relative">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên phòng chiếu..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleFilter()}
+            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
+          />
+        </div>
+        <button
+          onClick={handleFilter}
+          className="px-6 py-2 bg-primary hover:bg-primary-dull transition rounded-lg font-medium cursor-pointer"
+        >
+          Lọc
+        </button>
       </div>
 
-      {filteredRooms.length === 0 ? (
+      {rooms.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <p>
             {searchTerm
@@ -116,7 +126,7 @@ const ListRooms = () => {
       ) : (
         <>
           <div className="grid gap-4">
-            {filteredRooms.map((room) => (
+            {rooms.map((room) => (
               <div
                 key={room._id}
                 className="flex gap-4 bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:bg-gray-800/70 transition items-center"
