@@ -10,7 +10,6 @@ export const createPayment = async (bookingEntity, show, selectedSeats) => {
   try {
     console.log("CreatePayment call");
     const { _id: bookingId, amount, user: userId } = bookingEntity;
-    const { occupiedSeats } = show;
 
     const transID = bookingId;
     const embed_data = {
@@ -26,7 +25,7 @@ export const createPayment = async (bookingEntity, show, selectedSeats) => {
       app_trans_id: `${moment().format("YYMMDD")}_${transID}`,
       app_user: userId,
       app_time: Date.now(), // miliseconds
-      item: JSON.stringify([occupiedSeats]),
+      item: JSON.stringify(selectedSeats),
       embed_data: JSON.stringify(embed_data),
       amount: amount,
       description: `Payment for the ticket #${transID}`,

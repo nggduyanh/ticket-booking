@@ -213,6 +213,7 @@ const SeatLayout = () => {
         console.log("----------data.paymentResult", data.paymentResult);
 
         navigate("/bookings");
+        window.scrollTo(0, 0);
       } else {
         toast.error(data.message);
         setIsBooking(false);

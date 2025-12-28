@@ -7,6 +7,7 @@ import { StarIcon } from "lucide-react";
 import timeFormat from "../common/timeFormat";
 import DateSelect from "../components/DateSelect";
 import MovieCard from "../components/MovieCard";
+import MovieCarousel from "../components/MovieCarousel";
 import Loading from "../components/Loading";
 import { useAppContext } from "../context/AppContext";
 import { toast } from "react-hot-toast";
@@ -33,33 +34,34 @@ const MovieDetail = () => {
       });
       if (data.success) {
         setShow(data.show);
+
+        // Luôn cập nhật filteredDateTime với dữ liệu mới
         setFilteredDateTime(data.show.dateTime);
 
-        // Lấy danh sách phòng unique từ shows - luôn luôn lấy
-        const uniqueRooms = new Map();
-        const stats = {};
-
-        Object.values(data.show.dateTime).forEach((showTimes) => {
-          showTimes.forEach((showTime) => {
-            if (showTime.room && !uniqueRooms.has(showTime.room._id)) {
-              uniqueRooms.set(showTime.room._id, showTime.room);
-              // Khởi tạo stats cho phòng
-              stats[showTime.room._id] = {
-                totalSeats: showTime.room.totalSeats,
-                occupiedCount: 0,
-              };
-            }
-            // Cộng dồn số ghế đã chiếm
-            if (showTime.room && showTime.occupiedCount) {
-              stats[showTime.room._id].occupiedCount += showTime.occupiedCount;
-            }
-          });
-        });
-
-        const roomsList = Array.from(uniqueRooms.values());
-
-        // Chỉ set rooms khi load lần đầu (không có roomId filter)
+        // Lấy danh sách phòng unique từ shows - chỉ khi load lần đầu (không có roomId filter)
         if (!roomId) {
+          const uniqueRooms = new Map();
+          const stats = {};
+
+          Object.values(data.show.dateTime).forEach((showTimes) => {
+            showTimes.forEach((showTime) => {
+              if (showTime.room && !uniqueRooms.has(showTime.room._id)) {
+                uniqueRooms.set(showTime.room._id, showTime.room);
+                // Khởi tạo stats cho phòng
+                stats[showTime.room._id] = {
+                  totalSeats: showTime.room.totalSeats,
+                  occupiedCount: 0,
+                };
+              }
+              // Cộng dồn số ghế đã chiếm
+              if (showTime.room && showTime.occupiedCount) {
+                stats[showTime.room._id].occupiedCount +=
+                  showTime.occupiedCount;
+              }
+            });
+          });
+
+          const roomsList = Array.from(uniqueRooms.values());
           setRooms(roomsList);
           setRoomStats(stats);
           console.log("Rooms loaded:", roomsList);
@@ -172,16 +174,18 @@ const MovieDetail = () => {
           />
         )}
 
-      <p className="text-lg font-medium mt-20 mb-8">Có thể bạn cũng thích</p>
-      <div className="flex flex-wrap max-sm:justify-center gap-8">
-        {shows
-          .filter((movie) => movie._id !== show.movie._id)
-          .slice(0, 4)
-          .map((movie, index) => (
-            <MovieCard key={index} movie={movie} />
-          ))}
+      {/* Recommended Section - Full width */}
+      <div className="relative mt-20 -mx-6 md:-mx-16 lg:-mx-40">
+        <BlurCircle top="0" right="-150px" />
+        <MovieCarousel
+          movies={shows?.filter((movie) => movie._id !== show.movie._id) || []}
+          title="Có thể bạn cũng thích"
+          autoPlay={true}
+          autoPlayInterval={3500}
+        />
       </div>
-      <div className="flex justify-center mt-20">
+
+      <div className="flex justify-center mt-10 mb-20">
         <button
           onClick={() => {
             navigate(`/movies`);

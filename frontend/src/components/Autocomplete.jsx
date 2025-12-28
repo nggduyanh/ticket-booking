@@ -80,6 +80,7 @@ const Autocomplete = ({
 
   const handleClear = () => {
     setSearchTerm("");
+    setSelectedValue("");
     onChange("");
     setIsOpen(true);
     if (onSearch) {
@@ -93,6 +94,12 @@ const Autocomplete = ({
       onSearch(searchTerm || "");
     }
   };
+
+  // Filter options based on searchTerm
+  const filteredOptions = options.filter((option) => {
+    if (!searchTerm || option[valueKey] === value) return true;
+    return option[displayKey]?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
@@ -122,12 +129,12 @@ const Autocomplete = ({
               Xóa lựa chọn
             </button>
           )}
-          {options.length === 0 ? (
+          {filteredOptions.length === 0 ? (
             <div className="px-4 py-3 text-gray-400 text-sm">
               Không tìm thấy kết quả
             </div>
           ) : (
-            options.map((option) => (
+            filteredOptions.map((option) => (
               <button
                 key={option[valueKey]}
                 onClick={() => handleSelect(option)}

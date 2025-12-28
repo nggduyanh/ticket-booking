@@ -42,18 +42,22 @@ export const AppProvider = ({ children }) => {
     try {
       const { data } = await axios.get("/shows/list", {
         headers: {
-          Authorization: `Bearer ${await getToken()}`,
           "ngrok-skip-browser-warning": "1",
         },
       });
 
+      console.log("fetchShows response:", data);
+
       if (data.success) {
+        console.log("Shows data:", data.shows);
         setShows(data.shows);
       } else {
+        console.error("API returned success: false", data.message);
         toast.error(data.message);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching shows:", error);
+      console.error("Error details:", error.response?.data);
     }
   };
 

@@ -85,26 +85,21 @@ export const createBooking = async (req, res) => {
       bookedSeats: selectedSeats,
     });
 
-    selectedSeats.forEach((seat) => {
-      show.occupiedSeats[seat] = 3;
-    });
-    show.markModified("occupiedSeats");
-    await show.save();
-    console.log("------first show,", show);
-
     const paymentResult = await createPayment(booking, show, selectedSeats);
     console.log("-----paymentResult", paymentResult);
 
     if (paymentResult && paymentResult.return_code === 1) {
       booking.paymentLink = paymentResult.order_url;
       await booking.save();
-    } else {
-      await Booking.deleteOne({ _id: booking._id });
 
       selectedSeats.forEach((seat) => {
-        show.occupiedSeats[seat] = 2;
+        show.occupiedSeats[seat] = 3;
       });
       show.markModified("occupiedSeats");
+      await show.save();
+      console.log("------first show,", show);
+    } else {
+      await Booking.deleteOne({ _id: booking._id });
       await show.save();
 
       console.log("Tạo giao dịch thanh toán thất bại");

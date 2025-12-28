@@ -16,17 +16,16 @@ const CreateRoom = () => {
   });
   const [seatTypes, setSeatTypes] = useState([]);
   const [seatLayout, setSeatLayout] = useState({});
-  const [selectedSeatType, setSelectedSeatType] = useState("");
+  const [selectedSeatType, setSelectedSeatType] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchSeatTypes();
   }, []);
 
-  const fetchSeatTypes = async (searchKeyword = "") => {
+  const fetchSeatTypes = async () => {
     try {
-      const params = { page: 1, limit: 10 };
-      if (searchKeyword) params.search = searchKeyword;
+      const params = { all: "true" }; // Lấy tất cả loại ghế
 
       const { data } = await axios.get("/seat-types/list", {
         params,
@@ -37,9 +36,6 @@ const CreateRoom = () => {
       });
       if (data.success) {
         setSeatTypes(data.seatTypes);
-        if (data.seatTypes.length > 0) {
-          setSelectedSeatType(data.seatTypes[0]._id);
-        }
       }
     } catch (error) {
       console.error("Lỗi khi lấy danh sách loại ghế:", error);
@@ -280,19 +276,18 @@ const CreateRoom = () => {
             <label className="block text-sm font-medium mb-2">
               Loại ghế mặc định
             </label>
-            <Autocomplete
-              options={seatTypes.map((st) => ({
-                ...st,
-                displayName: `${st.name} (${st.priceMultiplier}x)`,
-              }))}
-              value={selectedSeatType}
-              onChange={setSelectedSeatType}
-              onSearch={fetchSeatTypes}
-              placeholder="Tìm loại ghế..."
-              displayKey="displayName"
-              valueKey="_id"
-              className="w-full"
-            />
+            <select
+              value={selectedSeatType || ""}
+              onChange={(e) => setSelectedSeatType(e.target.value || null)}
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
+            >
+              <option value="">-- Chọn loại ghế --</option>
+              {seatTypes.map((st) => (
+                <option key={st._id} value={st._id}>
+                  {st.name} ({st.priceMultiplier}x)
+                </option>
+              ))}
+            </select>
             <p className="text-xs text-gray-400 mt-1">
               💡 Click vào ghế để đổi loại, hoặc click vào chữ cái hàng (A, B,
               C...) để áp dụng cho cả hàng
