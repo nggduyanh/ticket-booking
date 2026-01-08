@@ -129,7 +129,10 @@ export const listShows = async (req, res) => {
 
     // Filter by genre
     if (genreId) {
-      movies = movies.filter((movie) => movie.genreId === genreId);
+      movies = movies.filter(
+        (movie) =>
+          movie.genreId && movie.genreId._id.toString() === genreId.toString()
+      );
     }
 
     // Apply pagination
